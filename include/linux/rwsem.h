@@ -45,11 +45,10 @@ struct rw_semaphore {
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
 	struct lockdep_map	dep_map;
 #endif
-        /* NOTICE: m_count is a vendor variable used for the config
-         * CONFIG_RWSEM_PRIO_AWARE. This is included here to maintain ABI
-         * compatibility with our vendors */
-        /* count for waiters preempt to queue in wait list */
+#ifdef CONFIG_RWSEM_PRIO_AWARE
+	/* count for waiters preempt to queue in wait list */
 	long m_count;
+#endif
 };
 
 /*
@@ -91,10 +90,17 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
 #define __RWSEM_OPT_INIT(lockname)
 #endif
 
+<<<<<<< HEAD
 #ifdef CONFIG_MTK_TASK_TURBO
 #define __RWSEM_TURBO_OWNER_INIT(lock_name)	 .turbo_owner = NULL
 #else
 #define __RWSEM_TURBO_OWNER_INIT(lock_name)
+=======
+#ifdef CONFIG_RWSEM_PRIO_AWARE
+#define __RWSEM_PRIO_AWARE_INIT(lockname)	.m_count = 0
+#else
+#define __RWSEM_PRIO_AWARE_INIT(lockname)
+>>>>>>> target/16.0
 #endif
 
 #define __RWSEM_INITIALIZER(name)				\
@@ -103,7 +109,11 @@ static inline int rwsem_is_locked(struct rw_semaphore *sem)
 	  .wait_lock = __RAW_SPIN_LOCK_UNLOCKED(name.wait_lock)	\
 	  __RWSEM_OPT_INIT(name)				\
 	  __RWSEM_DEP_MAP_INIT(name),				\
+<<<<<<< HEAD
 	  __RWSEM_TURBO_OWNER_INIT(name)}
+=======
+	  __RWSEM_PRIO_AWARE_INIT(name) }
+>>>>>>> target/16.0
 
 #define DECLARE_RWSEM(name) \
 	struct rw_semaphore name = __RWSEM_INITIALIZER(name)

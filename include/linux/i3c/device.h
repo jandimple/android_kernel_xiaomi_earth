@@ -180,11 +180,14 @@ struct i3c_driver {
 	const struct i3c_device_id *id_table;
 };
 
+<<<<<<< HEAD
 const struct i3c_device_id *
 i3c_device_match_id(struct i3c_device *i3cdev,
 		    const struct i3c_device_id *id_table);
 
 
+=======
+>>>>>>> target/16.0
 static inline struct i3c_driver *drv_to_i3cdrv(struct device_driver *drv)
 {
 	return container_of(drv, struct i3c_driver, driver);

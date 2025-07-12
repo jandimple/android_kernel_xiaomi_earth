@@ -85,6 +85,7 @@ int xhci_handshake_check_state(struct xhci_hcd *xhci,
 		void __iomem *ptr, u32 mask, u32 done, u64 timeout_us)
 {
 	u32	result;
+<<<<<<< HEAD
 	int	ret;
 
 	ret = readl_poll_timeout_atomic(ptr, result,
@@ -97,6 +98,23 @@ int xhci_handshake_check_state(struct xhci_hcd *xhci,
 		return -ENODEV;
 
 	return ret;
+=======
+
+	do {
+		result = readl_relaxed(ptr);
+		if (result == ~(u32)0)	/* card removed */
+			return -ENODEV;
+		/* host removed. Bail out */
+		if (xhci->xhc_state & XHCI_STATE_REMOVING)
+			return -ENODEV;
+		result &= mask;
+		if (result == done)
+			return 0;
+		udelay(1);
+		timeout_us--;
+	} while (timeout_us > 0);
+	return -ETIMEDOUT;
+>>>>>>> target/16.0
 }
 
 /*
@@ -150,7 +168,13 @@ int xhci_start(struct xhci_hcd *xhci)
 {
 	u32 temp;
 	int ret;
+	struct usb_hcd *hcd = xhci_to_hcd(xhci);
 
+	/*
+	 * disable irq to avoid xhci_irq flooding due to unhandeled port
+	 * change event in halt state, as soon as xhci_start clears halt bit
+	 */
+	disable_irq(hcd->irq);
 	temp = readl(&xhci->op_regs->command);
 	temp |= (CMD_RUN);
 	xhci_dbg_trace(xhci, trace_xhci_dbg_init, "// Turn on HC, cmd = 0x%x.",
@@ -170,6 +194,8 @@ int xhci_start(struct xhci_hcd *xhci)
 	if (!ret)
 		/* clear state flags. Including dying, halted or removing */
 		xhci->xhc_state = 0;
+
+	enable_irq(hcd->irq);
 
 	return ret;
 }
@@ -1041,6 +1067,12 @@ int xhci_suspend(struct xhci_hcd *xhci, bool do_wakeup)
 	if (xhci_handshake(&xhci->op_regs->status,
 		      STS_HALT, STS_HALT, delay)) {
 		xhci_warn(xhci, "WARN: xHC CMD_RUN timeout\n");
+		/* Set the HW_ACCESSIBLE so that any pending interrupts are
+		 * served.
+		 */
+		set_bit(HCD_FLAG_HW_ACCESSIBLE, &hcd->flags);
+		set_bit(HCD_FLAG_HW_ACCESSIBLE, &xhci->shared_hcd->flags);
+		xhci_hc_died(xhci);
 		spin_unlock_irq(&xhci->lock);
 		return -ETIMEDOUT;
 	}
@@ -5282,8 +5314,8 @@ static phys_addr_t xhci_get_sec_event_ring_phys_addr(struct usb_hcd *hcd,
 	struct sg_table sgt;
 	phys_addr_t pa;
 
-	if (intr_num > xhci->max_interrupters) {
-		xhci_err(xhci, "intr num %d > max intrs %d\n", intr_num,
+	if (intr_num >= xhci->max_interrupters) {
+		xhci_err(xhci, "intr num %d >= max intrs %d\n", intr_num,
 			xhci->max_interrupters);
 		return 0;
 	}
@@ -5347,20 +5379,23 @@ static phys_addr_t xhci_get_xfer_ring_phys_addr(struct usb_hcd *hcd,
 	return 0;
 }
 
+int xhci_get_core_id(struct usb_hcd *hcd)
+{
+	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
+
+	return xhci->core_id;
+}
+
 static int  xhci_stop_endpoint(struct usb_hcd *hcd,
 	struct usb_device *udev, struct usb_host_endpoint *ep)
 {
-	struct xhci_hcd *xhci;
+	struct xhci_hcd *xhci = hcd_to_xhci(hcd);
 	unsigned int ep_index;
 	struct xhci_virt_device *virt_dev;
 	struct xhci_command *cmd;
 	unsigned long flags;
 	int ret = 0;
 
-	if (!hcd || !udev || !ep)
-		return -EINVAL;
-
-	xhci = hcd_to_xhci(hcd);
 	cmd = xhci_alloc_command(xhci, true, GFP_NOIO);
 	if (!cmd)
 		return -ENOMEM;
@@ -5403,6 +5438,8 @@ free_cmd:
 	xhci_free_command(xhci, cmd);
 	return ret;
 }
+
+
 
 static const struct hc_driver xhci_hc_driver = {
 	.description =		"xhci-hcd",
@@ -5468,6 +5505,7 @@ static const struct hc_driver xhci_hc_driver = {
 	.sec_event_ring_cleanup =	xhci_sec_event_ring_cleanup,
 	.get_sec_event_ring_phys_addr =	xhci_get_sec_event_ring_phys_addr,
 	.get_xfer_ring_phys_addr =	xhci_get_xfer_ring_phys_addr,
+	.get_core_id =			xhci_get_core_id,
 	.stop_endpoint =		xhci_stop_endpoint,
 };
 

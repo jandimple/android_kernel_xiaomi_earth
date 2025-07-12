@@ -51,7 +51,10 @@ static inline void mapping_set_error(struct address_space *mapping, int error)
 		return;
 
 	/* Record in wb_err for checkers using errseq_t based tracking */
-	filemap_set_wb_err(mapping, error);
+	__filemap_set_wb_err(mapping, error);
+
+	/* Record it in superblock */
+	errseq_set(&mapping->host->i_sb->s_wb_err, error);
 
 	/* Record it in flags for now, for legacy callers */
 	if (error == -ENOSPC)
@@ -575,6 +578,8 @@ static inline __sched int wait_on_page_locked_killable(struct page *page)
 		return 0;
 	return wait_on_page_bit_killable(compound_head(page), PG_locked);
 }
+
+extern void put_and_wait_on_page_locked(struct page *page);
 
 /* 
  * Wait for a page to complete writeback

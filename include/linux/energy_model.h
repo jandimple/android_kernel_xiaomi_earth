@@ -117,6 +117,9 @@ static inline unsigned long em_pd_energy(struct em_perf_domain *pd,
 	int opp, opp_cap;
 #endif
 
+	if (!sum_util)
+		return 0;
+
 	/*
 	 * In order to predict the capacity state, map the utilization of the
 	 * most utilized CPU of the performance domain to a requested frequency,

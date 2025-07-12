@@ -38,6 +38,7 @@
 *.so.dbg
 *.su
 *.symtypes
+*.symversions
 *.tab.[ch]
 *.tar
 *.xz
@@ -130,3 +131,12 @@ all.config
 
 # Kdevelop4
 *.kdev4
+
+# fetched Android config fragments
+kernel/configs/android-*.cfg
+
+# Build system
+out/
+tc/
+anykernel/
+error.log

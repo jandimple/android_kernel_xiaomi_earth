@@ -43,6 +43,8 @@
 #include <linux/compiler.h>
 #include <linux/posix-timers.h>
 #include <linux/livepatch.h>
+#include <linux/oom.h>
+#include <linux/capability.h>
 #include <linux/cgroup.h>
 
 #define CREATE_TRACE_POINTS
@@ -54,6 +56,10 @@
 #include <asm/siginfo.h>
 #include <asm/cacheflush.h>
 #include "audit.h"	/* audit_signal_info() */
+
+#ifdef CONFIG_SAMSUNG_FREECESS
+#include <linux/freecess.h>
+#endif
 
 /*
  * SLAB caches for signal bits.
@@ -1271,6 +1277,15 @@ int do_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
 	unsigned long flags;
 	int ret = -ESRCH;
 
+#ifdef CONFIG_SAMSUNG_FREECESS
+	/*
+	 * System will send SIGIO to the app that locked the file when other apps access the file.
+	 * Report SIGIO to prevent other apps from getting stuck
+	 */
+	if ((sig == SIGKILL || sig == SIGTERM || sig == SIGABRT || sig == SIGQUIT || sig == SIGIO))
+		sig_report(p);
+#endif
+
 	if (lock_task_sighand(p, &flags)) {
 		ret = send_signal(sig, info, p, type);
 		unlock_task_sighand(p, &flags);
@@ -1388,8 +1403,15 @@ int group_send_sig_info(int sig, struct siginfo *info, struct task_struct *p,
 	ret = check_kill_permission(sig, info, p);
 	rcu_read_unlock();
 
-	if (!ret && sig)
+	if (!ret && sig) {
+		check_panic_on_foreground_kill(p);
 		ret = do_send_sig_info(sig, info, p, type);
+		if (capable(CAP_KILL) && sig == SIGKILL) {
+			if (!strcmp(current->comm, ULMK_MAGIC))
+				add_to_oom_reaper(p);
+			ulmk_update_last_kill();
+		}
+	}
 
 	return ret;
 }
@@ -1921,8 +1943,12 @@ bool do_notify_parent(struct task_struct *tsk, int sig)
 		if (psig->action[SIGCHLD-1].sa.sa_handler == SIG_IGN)
 			sig = 0;
 	}
+	/*
+	 * Send with __send_signal as si_pid and si_uid are in the
+	 * parent's namespaces.
+	 */
 	if (valid_signal(sig) && sig)
-		__group_send_sig_info(sig, &info, tsk->parent);
+		__send_signal(sig, &info, tsk->parent, PIDTYPE_TGID, false);
 	__wake_up_parent(tsk, tsk->parent);
 	spin_unlock_irqrestore(&psig->siglock, flags);
 

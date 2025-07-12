@@ -2,7 +2,12 @@
 # scripts/dtc makefile
 
 hostprogs-$(CONFIG_DTC) := dtc
+<<<<<<< HEAD
+=======
+ifeq ($(DTC_EXT),)
+>>>>>>> target/16.0
 always		:= $(hostprogs-y)
+endif
 
 dtc-objs	:= dtc.o flattree.o fstree.o data.o livetree.o treesource.o \
 		   srcpos.o checks.o util.o

@@ -436,6 +436,10 @@
 			embedded devices based on command line input.
 			See Documentation/block/cmdline-partition.txt
 
+	boot_cpus=	[SMP]
+			Rather than attempting to online all possible CPUs at
+			boot time, only online the specified set of CPUs.
+
 	boot_delay=	Milliseconds to delay each printk during boot.
 			Values larger than 10 seconds (10000) are changed to
 			no delay (0).
@@ -894,6 +898,9 @@
 			Can be useful to work around chipset bugs.
 
 	dis_ucode_ldr	[X86] Disable the microcode loader.
+
+	dm=		[DM] Allows early creation of a device-mapper device.
+			See Documentation/device-mapper/boot.txt.
 
 	dma_debug=off	If the kernel is compiled with DMA_API_DEBUG support,
 			this option disables the debugging code at boot.
@@ -2355,6 +2362,8 @@
 
 	ltpc=		[NET]
 			Format: <io>,<irq>,<dma>
+
+	lsm.debug	[SECURITY] Enable LSM initialization debugging output.
 
 	machvec=	[IA-64] Force the use of a particular machine-vector
 			(machvec) in a generic kernel.

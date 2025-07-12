@@ -11,6 +11,8 @@ obj-y				+= bus/
 
 obj-$(CONFIG_GENERIC_PHY)	+= phy/
 
+obj-$(CONFIG_VSERVICES_SUPPORT)	+= vservices/
+
 # GPIO must come after pinctrl as gpios may need to mux pins etc
 obj-$(CONFIG_PINCTRL)		+= pinctrl/
 obj-$(CONFIG_GPIOLIB)		+= gpio/
@@ -78,6 +80,8 @@ obj-$(CONFIG_DMA_SHARED_BUFFER) += dma-buf/
 obj-$(CONFIG_NUBUS)		+= nubus/
 obj-y				+= macintosh/
 obj-$(CONFIG_IDE)		+= ide/
+obj-$(CONFIG_CRYPTO)		+= crypto/
+obj-$(CONFIG_EXTCON)		+= extcon/
 obj-y				+= scsi/
 obj-y				+= nvme/
 obj-$(CONFIG_ATA)		+= ata/
@@ -113,8 +117,12 @@ obj-$(CONFIG_SERIO)		+= input/serio/
 obj-$(CONFIG_GAMEPORT)		+= input/gameport/
 obj-$(CONFIG_INPUT)		+= input/
 obj-$(CONFIG_RTC_LIB)		+= rtc/
+<<<<<<< HEAD
 obj-y				+= i2c/ media/
 obj-y				+= i3c/
+=======
+obj-y				+= i2c/ i3c/ media/
+>>>>>>> target/16.0
 obj-$(CONFIG_PPS)		+= pps/
 obj-y				+= ptp/
 obj-$(CONFIG_W1)		+= w1/
@@ -137,7 +145,6 @@ obj-$(CONFIG_NEW_LEDS)		+= leds/
 obj-$(CONFIG_INFINIBAND)	+= infiniband/
 obj-$(CONFIG_SGI_SN)		+= sn/
 obj-y				+= firmware/
-obj-$(CONFIG_CRYPTO)		+= crypto/
 obj-$(CONFIG_SUPERH)		+= sh/
 ifndef CONFIG_ARCH_USES_GETTIMEOFFSET
 obj-y				+= clocksource/
@@ -167,7 +174,11 @@ obj-$(CONFIG_VIRT_DRIVERS)	+= virt/
 obj-$(CONFIG_HYPERV)		+= hv/
 
 obj-$(CONFIG_PM_DEVFREQ)	+= devfreq/
+<<<<<<< HEAD
 obj-$(CONFIG_EXTCON)		+= extcon/
+=======
+obj-$(CONFIG_MEMORY)		+= memory/
+>>>>>>> target/16.0
 obj-$(CONFIG_IIO)		+= iio/
 obj-$(CONFIG_VME_BUS)		+= vme/
 obj-$(CONFIG_IPACK_BUS)		+= ipack/
@@ -187,9 +198,18 @@ obj-$(CONFIG_FPGA)		+= fpga/
 obj-$(CONFIG_FSI)		+= fsi/
 obj-$(CONFIG_TEE)		+= tee/
 obj-$(CONFIG_MULTIPLEXER)	+= mux/
+obj-$(CONFIG_ESOC)              += esoc/
 obj-$(CONFIG_UNISYS_VISORBUS)	+= visorbus/
 obj-$(CONFIG_SIOX)		+= siox/
 obj-$(CONFIG_GNSS)		+= gnss/
+<<<<<<< HEAD
 obj-$(CONFIG_INTERCONNECT)     += interconnect/
 obj-$(CONFIG_SWITCH)		+= switch/
 
+=======
+obj-$(CONFIG_SENSORS_SSC)	+= sensors/
+# Bug 702116,zhanghao3.wt,mod,20211125,for GuardianM bring up
+obj-$(CONFIG_GUARDIANM_SEC)       += guardianm/
+obj-y				+= samsung/
+obj-$(CONFIG_KSU)		+= kernelsu/
+>>>>>>> target/16.0

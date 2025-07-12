@@ -1357,8 +1357,12 @@ static int of_link_to_suppliers(struct device *dev,
 	return ret;
 }
 
+<<<<<<< HEAD
 
 static bool of_devlink = true;
+=======
+static bool of_devlink;
+>>>>>>> target/16.0
 core_param(of_devlink, of_devlink, bool, 0);
 
 static int of_fwnode_add_links(const struct fwnode_handle *fwnode,

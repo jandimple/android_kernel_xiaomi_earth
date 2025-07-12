@@ -327,12 +327,16 @@ static u64 fuse_get_unique(struct fuse_iqueue *fiq)
 	return ++fiq->reqctr;
 }
 
-static void queue_request(struct fuse_iqueue *fiq, struct fuse_req *req)
+static void queue_request(struct fuse_iqueue *fiq, struct fuse_req *req,
+				bool sync)
 {
 	req->in.h.len = sizeof(struct fuse_in_header) +
 		len_args(req->in.numargs, (struct fuse_arg *) req->in.args);
 	list_add_tail(&req->list, &fiq->pending);
-	wake_up(&fiq->waitq);
+	if (sync)
+		wake_up_sync(&fiq->waitq);
+	else
+		wake_up(&fiq->waitq);
 	kill_fasync(&fiq->fasync, SIGIO, POLL_IN);
 }
 
@@ -368,7 +372,7 @@ static void flush_bg_queue(struct fuse_conn *fc)
 		fc->active_background++;
 		spin_lock(&fiq->lock);
 		req->in.h.unique = fuse_get_unique(fiq);
-		queue_request(fiq, req);
+		queue_request(fiq, req, 0);
 		spin_unlock(&fiq->lock);
 	}
 }
@@ -497,7 +501,7 @@ static void __fuse_request_send(struct fuse_conn *fc, struct fuse_req *req)
 		req->out.h.error = -ENOTCONN;
 	} else {
 		req->in.h.unique = fuse_get_unique(fiq);
-		queue_request(fiq, req);
+		queue_request(fiq, req, 1);
 		/* acquire extra reference, since request is still needed
 		   after request_end() */
 		__fuse_get_request(req);
@@ -637,7 +641,7 @@ static int fuse_request_send_notify_reply(struct fuse_conn *fc,
 	req->in.h.unique = unique;
 	spin_lock(&fiq->lock);
 	if (fiq->connected) {
-		queue_request(fiq, req);
+		queue_request(fiq, req, 0);
 		err = 0;
 	}
 	spin_unlock(&fiq->lock);
@@ -2291,6 +2295,7 @@ static long fuse_dev_ioctl(struct file *file, unsigned int cmd,
 	int res;
 	int oldfd;
 	struct fuse_dev *fud = NULL;
+<<<<<<< HEAD
 	struct fuse_passthrough_out pto;
 
 	if (_IOC_TYPE(cmd) != FUSE_DEV_IOC_MAGIC)
@@ -2298,6 +2303,11 @@ static long fuse_dev_ioctl(struct file *file, unsigned int cmd,
 
 	switch (_IOC_NR(cmd)) {
 	case _IOC_NR(FUSE_DEV_IOC_CLONE):
+=======
+
+	switch (cmd) {
+	case FUSE_DEV_IOC_CLONE:
+>>>>>>> target/16.0
 		res = -EFAULT;
 		if (!get_user(oldfd, (__u32 __user *)arg)) {
 			struct file *old = fget(oldfd);
@@ -2322,6 +2332,7 @@ static long fuse_dev_ioctl(struct file *file, unsigned int cmd,
 			}
 		}
 		break;
+<<<<<<< HEAD
 	case _IOC_NR(FUSE_DEV_IOC_PASSTHROUGH_OPEN):
 		res = -EFAULT;
 		if (!copy_from_user(&pto,
@@ -2331,6 +2342,15 @@ static long fuse_dev_ioctl(struct file *file, unsigned int cmd,
 			fud = fuse_get_dev(file);
 			if (fud)
 				res = fuse_passthrough_open(fud, &pto);
+=======
+	case FUSE_DEV_IOC_PASSTHROUGH_OPEN:
+		res = -EFAULT;
+		if (!get_user(oldfd, (__u32 __user *)arg)) {
+			res = -EINVAL;
+			fud = fuse_get_dev(file);
+			if (fud)
+				res = fuse_passthrough_open(fud, oldfd);
+>>>>>>> target/16.0
 		}
 		break;
 	default:

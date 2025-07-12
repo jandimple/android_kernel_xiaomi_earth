@@ -47,8 +47,14 @@ static const char * const power_supply_type_text[] = {
 	/* C3T code for HQHW-2797 by tongjiacheng at 2022/09/13 end */
 	"USB_PD", "USB_PD_DRP", "BrickID",
 	"USB_HVDCP", "USB_HVDCP_3", "USB_HVDCP_3P5", "Wireless", "USB_FLOAT",
-	"BMS", "Parallel", "Main", "USB_C_UFP", "USB_C_DFP",
-	"Charge_Pump",
+	/* Bug594012,taohuayi.wt,20220119,Bringup:Add Wipower type */
+	"BMS", "Parallel", "Main", "Wipower", "USB_C_UFP", "USB_C_DFP",
+	"Charge_Pump","OTG", //Bug707468,lizhou02,wt.add SS-node + "OTG"
+/* +Bug707480,lizhou02.wt,20211209,Bringup:Add for AFC, Begin +++  */
+#if defined(CONFIG_AFC)
+	"AFC",
+#endif
+/* -Bug707480,lizhou02.wt,20211209,Bringup:Add for AFC, End ---  */
 };
 
 static const char * const power_supply_usb_type_text[] = {
@@ -61,7 +67,7 @@ static const char * const power_supply_status_text[] = {
 };
 
 static const char * const power_supply_charge_type_text[] = {
-	"Unknown", "N/A", "Trickle", "Fast", "Taper"
+	"Unknown", "N/A", "Trickle", "Fast", "Taper","Slow" /* Bug707468,lizhou02,wt.add SS-node + "Slow" */
 };
 
 static const char * const power_supply_health_text[] = {
@@ -95,13 +101,7 @@ static const char * const power_supply_usbc_text[] = {
 	"Source attached (default current)",
 	"Source attached (medium current)",
 	"Source attached (high current)",
-	"Debug Accessory Mode (default current)",
-	"Debug Accessory Mode (medium current)",
-	"Debug Accessory Mode (high current)",
 	"Non compliant",
-	"Non compliant (Rp-Default/Rp-Default)",
-	"Non compliant (Rp-1.5A/Rp-1.5A)",
-	"Non compliant (Rp-3A/Rp-3A)"
 };
 
 static const char * const power_supply_usbc_pr_text[] = {
@@ -252,6 +252,16 @@ static ssize_t power_supply_store_property(struct device *dev,
 	struct power_supply *psy = dev_get_drvdata(dev);
 	enum power_supply_property psp = attr - power_supply_attrs;
 	union power_supply_propval value;
+	/* +Bug707468,lizhou02,wt.20211216,add SS-node +"STORE_MODE"  */
+	int x;
+	if(psp == POWER_SUPPLY_PROP_STORE_MODE)
+	{
+		if(sscanf(buf,"%10d\n",&x)==1){
+			value.intval = x;
+			pr_err("WT buf %s, store_mode %d, \n",buf, x);
+		}
+	}
+	/* -Bug707468,lizhou02,wt.20211216,add SS-node + "STORE_MODE" */
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_STATUS:
@@ -460,6 +470,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(pd_voltage_max),
 	POWER_SUPPLY_ATTR(pd_voltage_min),
 	POWER_SUPPLY_ATTR(sdp_current_max),
+	POWER_SUPPLY_ATTR(fg_reset_clock),
 	POWER_SUPPLY_ATTR(connector_type),
 	POWER_SUPPLY_ATTR(parallel_batfet_mode),
 	POWER_SUPPLY_ATTR(parallel_fcc_max),
@@ -468,6 +479,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(batt_profile_version),
 	POWER_SUPPLY_ATTR(batt_full_current),
 	POWER_SUPPLY_ATTR(recharge_soc),
+	POWER_SUPPLY_ATTR(recharge_vbat),
 	POWER_SUPPLY_ATTR(hvdcp_opti_allowed),
 	POWER_SUPPLY_ATTR(smb_en_mode),
 	POWER_SUPPLY_ATTR(smb_en_reason),
@@ -495,27 +507,31 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(comp_clamp_level),
 	POWER_SUPPLY_ATTR(adapter_cc_mode),
 	POWER_SUPPLY_ATTR(skin_health),
-	POWER_SUPPLY_ATTR(charge_disable),
-	POWER_SUPPLY_ATTR(adapter_details),
-	POWER_SUPPLY_ATTR(dead_battery),
-	POWER_SUPPLY_ATTR(voltage_fifo),
-	POWER_SUPPLY_ATTR(cc_uah),
-	POWER_SUPPLY_ATTR(operating_freq),
-	POWER_SUPPLY_ATTR(aicl_delay),
-	POWER_SUPPLY_ATTR(aicl_icl),
-	POWER_SUPPLY_ATTR(rtx),
-	POWER_SUPPLY_ATTR(cutoff_soc),
-	POWER_SUPPLY_ATTR(sys_soc),
-	POWER_SUPPLY_ATTR(batt_soc),
-	/* Capacity Estimation */
-	POWER_SUPPLY_ATTR(batt_ce_ctrl),
-	POWER_SUPPLY_ATTR(batt_ce_full),
-	/* Resistance Estimaton */
-	POWER_SUPPLY_ATTR(resistance_avg),
-	POWER_SUPPLY_ATTR(batt_res_filt_cnts),
 	POWER_SUPPLY_ATTR(aicl_done),
 	POWER_SUPPLY_ATTR(voltage_step),
-	POWER_SUPPLY_ATTR(otg_fastroleswap),
+	/* Bug 538582, zhangbin2.wt, 20200311, Add for Charger FTM test */
+	POWER_SUPPLY_ATTR(StopCharging_Test),
+	POWER_SUPPLY_ATTR(StartCharging_Test),
+	/* +Bug707468,lizhou02,wt.20211216.add SS-node */
+	POWER_SUPPLY_ATTR(store_mode),
+	POWER_SUPPLY_ATTR(hv_charger_status),
+	POWER_SUPPLY_ATTR(batt_current_event),
+	POWER_SUPPLY_ATTR(batt_slate_mode),
+	POWER_SUPPLY_ATTR(batt_misc_event),
+	POWER_SUPPLY_ATTR(new_charge_type),
+	POWER_SUPPLY_ATTR(batt_current_ua_now),
+	/* +Bug707480,lizhou02.wt,20211209,Bringup:Add for AFC, End --- */
+#if defined(CONFIG_AFC)
+	POWER_SUPPLY_ATTR(afc_result),
+	POWER_SUPPLY_ATTR(hv_disable),
+	POWER_SUPPLY_ATTR(afc_flag),
+#endif
+	/* -Bug594012,gudi.wt,20201023,Bringup:Add for AFC, End --- */
+	/* +EXTB P200521-06425 taohauyi.wt,20220223, Add, battery protect */
+#if defined(CONFIG_BATTERY_AGE_FORECAST)
+	POWER_SUPPLY_ATTR(battery_cycle),
+#endif
+	/* -EXTB P200521-06425 taohuayi.wt,20220223, Add, battery protect */
 	POWER_SUPPLY_ATTR(apsd_rerun),
 	POWER_SUPPLY_ATTR(apsd_timeout),
 	/* Charge pump properties */
@@ -531,17 +547,13 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(cp_ilim),
 	POWER_SUPPLY_ATTR(irq_status),
 	POWER_SUPPLY_ATTR(parallel_output_mode),
-	POWER_SUPPLY_ATTR(alignment),
-	POWER_SUPPLY_ATTR(moisture_detection_enabled),
 	POWER_SUPPLY_ATTR(cc_toggle_enable),
 	POWER_SUPPLY_ATTR(fg_type),
 	POWER_SUPPLY_ATTR(charger_status),
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
-	POWER_SUPPLY_ATTR(charge_charger_state),
 	/* Properties of type `const char *' */
 	POWER_SUPPLY_ATTR(model_name),
-	POWER_SUPPLY_ATTR(ptmc_id),
 	POWER_SUPPLY_ATTR(manufacturer),
 	POWER_SUPPLY_ATTR(battery_type),
 	POWER_SUPPLY_ATTR(cycle_counts),
@@ -639,13 +651,12 @@ int power_supply_uevent(struct device *dev, struct kobj_uevent_env *env)
 		struct device_attribute *attr;
 		char *line;
 
-		attr = &power_supply_attrs[psy->desc->properties[j]];
-
-		if (!attr->attr.name) {
-			dev_info(dev, "%s:%d FAKE attr.name=NULL skip\n",
-				__FILE__, __LINE__);
+		/* +Bug707468,lizhou02,wt.20211216,add SS-node */
+		if ((psy->desc->properties[j] == POWER_SUPPLY_PROP_STOPCHARGING_TEST)
+			|| (psy->desc->properties[j] == POWER_SUPPLY_PROP_STARTCHARGING_TEST))
 			continue;
-		}
+		/* +Bug707468,lizhou02,wt.20211216,add SS-node */
+		attr = &power_supply_attrs[psy->desc->properties[j]];
 
 		ret = power_supply_show_property(dev, attr, prop_buf);
 		if (ret == -ENODEV || ret == -ENODATA) {

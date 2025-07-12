@@ -539,12 +539,16 @@ uvc_v4l2_subscribe_event(struct v4l2_fh *fh,
 			 const struct v4l2_event_subscription *sub)
 {
 	struct uvc_device *uvc = video_get_drvdata(fh->vdev);
+<<<<<<< HEAD
 	struct uvc_file_handle *handle = to_uvc_file_handle(fh);
+=======
+>>>>>>> target/16.0
 	int ret;
 
 	if (sub->type < UVC_EVENT_FIRST || sub->type > UVC_EVENT_LAST)
 		return -EINVAL;
 
+<<<<<<< HEAD
 	if (sub->type == UVC_EVENT_SETUP && uvc->func_connected)
 		return -EBUSY;
 
@@ -568,6 +572,13 @@ static void uvc_v4l2_disable(struct uvc_device *uvc)
 	uvcg_free_buffers(&uvc->video.queue);
 	uvc->func_connected = false;
 	wake_up_interruptible(&uvc->func_connected_queue);
+=======
+	ret = v4l2_event_subscribe(fh, sub, 2, NULL);
+	if (!ret && sub->type == UVC_EVENT_UNBIND)
+		uvc->wait_for_close = true;
+
+	return ret;
+>>>>>>> target/16.0
 }
 
 static int

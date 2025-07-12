@@ -148,7 +148,20 @@ out:									\
 		return ret;						\
 	}								\
 									\
-	CONFIGFS_ATTR_RO(_f_##_opts_, ifname)
+	static ssize_t _f_##_opts_ifname_store(struct config_item *item, \
+					       const char *page, size_t len)\
+	{								\
+		struct f_##_f_##_opts *opts = to_f_##_f_##_opts(item);	\
+		int ret = -EBUSY;					\
+									\
+		mutex_lock(&opts->lock);				\
+		if (!opts->refcnt)					\
+			ret = gether_set_ifname(opts->net, page, len);	\
+		mutex_unlock(&opts->lock);				\
+		return ret ?: len;					\
+	}								\
+									\
+	CONFIGFS_ATTR(_f_##_opts_, ifname)
 
 #define USB_ETHER_CONFIGFS_ITEM_ATTR_U8_RW(_f_, _n_)			\
 	static ssize_t _f_##_opts_##_n_##_show(struct config_item *item,\
@@ -183,5 +196,92 @@ out:									\
 	}								\
 									\
 	CONFIGFS_ATTR(_f_##_opts_, _n_)
+
+#define USB_ETHER_CONFIGFS_ITEM_ATTR_UL_MAX_PKT_PER_XFER(_f_)		\
+	static ssize_t							\
+		_f_##_opts_ul_max_pkt_per_xfer_show(struct config_item *item,\
+						char *page)		\
+	{								\
+		struct f_##_f_##_opts *opts = to_f_##_f_##_opts(item);	\
+		unsigned int max;					\
+									\
+		mutex_lock(&opts->lock);				\
+		max = gether_get_ul_max_pkts_per_xfer(opts->net);	\
+		mutex_unlock(&opts->lock);				\
+		return scnprintf(page, PAGE_SIZE, "%d\n", max);		\
+	}								\
+									\
+	static ssize_t							\
+		_f_##_opts_ul_max_pkt_per_xfer_store(struct config_item *item,\
+						const char *page, size_t len)\
+	{								\
+		struct f_##_f_##_opts *opts = to_f_##_f_##_opts(item);	\
+		u8 val;							\
+		int ret;						\
+									\
+		mutex_lock(&opts->lock);				\
+		if (opts->refcnt) {					\
+			ret = -EBUSY;					\
+			goto out;					\
+		}							\
+									\
+		ret = kstrtou8(page, 0, &val);				\
+		if (ret)						\
+			goto out;					\
+									\
+		gether_set_ul_max_pkts_per_xfer(opts->net, val);	\
+		ret = len;						\
+out:									\
+		mutex_unlock(&opts->lock);				\
+		return ret;						\
+	}								\
+									\
+	CONFIGFS_ATTR(_f_##_opts_, ul_max_pkt_per_xfer)
+
+#define USB_ETHERNET_CONFIGFS_ITEM_ATTR_WCEIS(_f_)			\
+	static ssize_t _f_##_opts_wceis_show(struct config_item *item,	\
+					     char *page)		\
+	{								\
+		struct f_##_f_##_opts *opts = to_f_##_f_##_opts(item);	\
+		bool wceis;						\
+									\
+		if (opts->bound == false) {				\
+			pr_err("Gadget function do not bind yet.\n");	\
+			return -ENODEV;					\
+		}							\
+									\
+		mutex_lock(&opts->lock);				\
+		wceis = opts->wceis;					\
+		mutex_unlock(&opts->lock);				\
+		return snprintf(page, PAGE_SIZE, "%d", wceis);		\
+	}								\
+									\
+	static ssize_t _f_##_opts_wceis_store(struct config_item *item, \
+					      const char *page, size_t len)\
+	{								\
+		struct f_##_f_##_opts *opts = to_f_##_f_##_opts(item);	\
+		bool wceis;						\
+		int ret;						\
+									\
+		if (opts->bound == false) {				\
+			pr_err("Gadget function do not bind yet.\n");	\
+			return -ENODEV;					\
+		}							\
+									\
+		mutex_lock(&opts->lock);				\
+									\
+		ret = kstrtobool(page, &wceis);				\
+		if (ret)						\
+			goto out;					\
+									\
+		opts->wceis = wceis;					\
+		ret = len;						\
+out:									\
+		mutex_unlock(&opts->lock);				\
+									\
+		return ret;						\
+	}								\
+									\
+	CONFIGFS_ATTR(_f_##_opts_, wceis)
 
 #endif /* __U_ETHER_CONFIGFS_H */

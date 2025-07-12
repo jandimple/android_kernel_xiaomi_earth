@@ -31,10 +31,16 @@
 #include <linux/err.h>
 #include <linux/pci.h>
 #include <linux/bitops.h>
+#include <linux/debugfs.h>
 #include <linux/property.h>
 #include <trace/events/iommu.h>
+<<<<<<< HEAD
 #ifdef CONFIG_MTK_IOMMU_V2
 #include "mtk_iommu_ext.h"
+=======
+#ifdef CONFIG_MSM_TZ_SMMU
+#include <soc/qcom/msm_tz_smmu.h>
+>>>>>>> target/16.0
 #endif
 
 static struct kset *iommu_group_kset;
@@ -105,12 +111,55 @@ int iommu_device_register(struct iommu_device *iommu)
 }
 EXPORT_SYMBOL_GPL(iommu_device_register);
 
+#ifdef CONFIG_ARM_SMMU_SELFTEST
+struct iommu_device *get_iommu_by_fwnode(struct fwnode_handle *fwnode)
+{
+	struct iommu_device *iommu;
+
+	spin_lock(&iommu_device_lock);
+	list_for_each_entry(iommu, &iommu_device_list, list) {
+		if (iommu->fwnode == fwnode) {
+			spin_unlock(&iommu_device_lock);
+			return iommu;
+		}
+	}
+	spin_unlock(&iommu_device_lock);
+
+	return NULL;
+}
+#else
+struct iommu_device *get_iommu_by_fwnode(struct fwnode_handle *fwnode)
+{
+	return NULL;
+}
+#endif
+
 void iommu_device_unregister(struct iommu_device *iommu)
 {
 	spin_lock(&iommu_device_lock);
 	list_del(&iommu->list);
 	spin_unlock(&iommu_device_lock);
 }
+
+#ifdef CONFIG_MSM_TZ_SMMU
+void *arm_smmu_get_by_addr(void __iomem *addr)
+{
+	struct iommu_device *iommu;
+	unsigned long flags;
+	void *smmu = NULL;
+
+	spin_lock_irqsave(&iommu_device_lock, flags);
+	list_for_each_entry(iommu, &iommu_device_list, list) {
+		smmu = get_smmu_from_addr(iommu, addr);
+		if (!smmu)
+			continue;
+		break;
+	}
+	spin_unlock_irqrestore(&iommu_device_lock, flags);
+
+	return smmu;
+}
+#endif
 
 static struct iommu_domain *__iommu_domain_alloc(struct bus_type *bus,
 						 unsigned type);
@@ -647,7 +696,11 @@ rename:
 		goto err_put_group;
 	}
 
+<<<<<<< HEAD
 	iommu_group_create_direct_mappings(group, dev);
+=======
+
+>>>>>>> target/16.0
 	/* Notify any listeners about change to group. */
 	blocking_notifier_call_chain(&group->notifier,
 				     IOMMU_GROUP_NOTIFY_ADD_DEVICE, dev);
@@ -1566,12 +1619,12 @@ phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain, dma_addr_t iova)
 EXPORT_SYMBOL_GPL(iommu_iova_to_phys);
 
 phys_addr_t iommu_iova_to_phys_hard(struct iommu_domain *domain,
-				    dma_addr_t iova)
+				    dma_addr_t iova, unsigned long trans_flags)
 {
 	if (unlikely(domain->ops->iova_to_phys_hard == NULL))
 		return 0;
 
-	return domain->ops->iova_to_phys_hard(domain, iova);
+	return domain->ops->iova_to_phys_hard(domain, iova, trans_flags);
 }
 
 uint64_t iommu_iova_to_pte(struct iommu_domain *domain,
@@ -2194,3 +2247,23 @@ int iommu_fwspec_add_ids(struct device *dev, u32 *ids, int num_ids)
 	return 0;
 }
 EXPORT_SYMBOL_GPL(iommu_fwspec_add_ids);
+
+/*
+ * Return the id asoociated with a pci device.
+ */
+int iommu_fwspec_get_id(struct device *dev, u32 *id)
+{
+	struct iommu_fwspec *fwspec = dev->iommu_fwspec;
+
+	if (!fwspec)
+		return -EINVAL;
+
+	if (!dev_is_pci(dev))
+		return -EINVAL;
+
+	if (fwspec->num_ids != 1)
+		return -EINVAL;
+
+	*id = fwspec->ids[0];
+	return 0;
+}

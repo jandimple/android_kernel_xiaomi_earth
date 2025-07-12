@@ -2261,6 +2261,10 @@ static void free_module(struct module *mod)
 
 	/* Finally, free the core (containing the module structure) */
 	disable_ro_nx(&mod->core_layout);
+#ifdef CONFIG_DEBUG_MODULE_LOAD_INFO
+	pr_info("Unloaded %s: module core layout, start: 0x%pK size: 0x%x\n",
+		mod->name, mod->core_layout.base, mod->core_layout.size);
+#endif
 	module_memfree(mod->core_layout.base);
 }
 
@@ -4259,10 +4263,10 @@ int module_kallsyms_on_each_symbol(int (*fn)(void *, const char *,
 static void cfi_init(struct module *mod)
 {
 #ifdef CONFIG_CFI_CLANG
-	preempt_disable();
+	rcu_read_lock_sched();
 	mod->cfi_check =
 		(cfi_check_fn)mod_find_symname(mod, CFI_CHECK_FN_NAME);
-	preempt_enable();
+	rcu_read_unlock_sched();
 	cfi_module_add(mod, module_addr_min, module_addr_max);
 #endif
 }

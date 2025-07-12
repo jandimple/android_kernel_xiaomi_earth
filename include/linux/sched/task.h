@@ -33,7 +33,13 @@ extern asmlinkage void schedule_tail(struct task_struct *prev);
 extern void init_idle(struct task_struct *idle, int cpu);
 
 extern int sched_fork(unsigned long clone_flags, struct task_struct *p);
+<<<<<<< HEAD
 extern void sched_post_fork(struct task_struct *p);
+=======
+#ifdef CONFIG_SCHED_BORE
+extern void sched_post_fork(struct task_struct *p);
+#endif // CONFIG_SCHED_BORE
+>>>>>>> target/16.0
 extern void sched_dead(struct task_struct *p);
 
 void __noreturn do_task_dead(void);
@@ -107,6 +113,7 @@ static inline void put_task_struct(struct task_struct *t)
 }
 
 struct task_struct *task_rcu_dereference(struct task_struct **ptask);
+void put_task_struct_rcu_user(struct task_struct *task);
 
 #ifdef CONFIG_ARCH_WANTS_DYNAMIC_TASK_STRUCT
 extern int arch_task_struct_size __read_mostly;

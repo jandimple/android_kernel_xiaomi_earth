@@ -265,6 +265,12 @@
 /* MediaTek BTIF */
 #define PORT_MTK_BTIF	117
 
+<<<<<<< HEAD
 /* Mediatek */
 #define PORT_MTK	118
+=======
+/* QTI EUD UART */
+#define PORT_EUD_UART	118
+
+>>>>>>> target/16.0
 #endif /* _UAPILINUX_SERIAL_CORE_H */

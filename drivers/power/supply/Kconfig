@@ -655,6 +655,7 @@ config CHARGER_CROS_USBPD
 	  what is connected to USB PD ports from the EC and converts
 	  that into power_supply properties.
 
+<<<<<<< HEAD
 config MTK_BATTERY
 	bool "MTK BATTERY framework and algorithm"
 	depends on MFD_MT6397
@@ -881,5 +882,11 @@ if MACH_MT6785
 source "drivers/power/supply/mediatek/battery/Kconfig"
 source "drivers/power/supply/mediatek/charger/Kconfig"
 endif
+=======
+#/* Bug707480,lizhou02.wt,20211209,Bringup:Add for AFC */
+source "drivers/power/supply/afc/Kconfig"
+
+source "drivers/power/supply/qcom/Kconfig"
+>>>>>>> target/16.0
 
 endif # POWER_SUPPLY

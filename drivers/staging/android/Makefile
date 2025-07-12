@@ -4,6 +4,7 @@ ccflags-y += -I$(src)			# needed for trace events
 
 obj-$(CONFIG_ASHMEM)			+= ashmem.o
 obj-$(CONFIG_ANDROID_VSOC)		+= vsoc.o
+<<<<<<< HEAD
 obj-$(CONFIG_ANDROID_INTF_ALARM_DEV)	+= alarm-dev.o
 obj-$(CONFIG_DEBUG_KINFO)		+= debug_kinfo.o
 
@@ -21,3 +22,8 @@ else ifeq ($(CONFIG_ION),y)
 else
   $(info ION: ION disable)
 endif
+=======
+obj-$(CONFIG_SAMSUNG_FREECESS)		+= freecess.o
+obj-$(CONFIG_SAMSUNG_FREECESS)		+= freecess_pkg.o
+obj-$(CONFIG_SAMSUNG_LMKD_DEBUG)		+= lmkd_debug.o
+>>>>>>> target/16.0

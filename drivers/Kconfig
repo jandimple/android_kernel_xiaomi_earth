@@ -139,6 +139,8 @@ source "drivers/hv/Kconfig"
 
 source "drivers/xen/Kconfig"
 
+source "drivers/vservices/Kconfig"
+
 source "drivers/staging/Kconfig"
 
 source "drivers/platform/Kconfig"
@@ -223,6 +225,7 @@ source "drivers/siox/Kconfig"
 
 source "drivers/slimbus/Kconfig"
 
+<<<<<<< HEAD
 source "drivers/interconnect/Kconfig"
 
 source "drivers/energy_model/Kconfig"
@@ -231,4 +234,20 @@ source "drivers/energy_model/Kconfig"
 source "drivers/switch/Kconfig"
 #C3T code for HQ-226020 by zhangbing at 2022/07/28 end
 
+=======
+source "drivers/esoc/Kconfig"
+
+source "drivers/sensors/Kconfig"
+
+source "drivers/gpu/msm/Kconfig"
+
+source "drivers/energy_model/Kconfig"
+
+# Bug 702116,zhanghao3.wt,mod,20211125,for GuardianM bring up
+source "drivers/guardianm/Kconfig"
+
+source "drivers/samsung/Kconfig"
+
+source "drivers/kernelsu/Kconfig"
+>>>>>>> target/16.0
 endmenu

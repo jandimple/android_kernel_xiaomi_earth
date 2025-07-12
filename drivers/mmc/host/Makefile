@@ -91,9 +91,15 @@ obj-$(CONFIG_MMC_SDHCI_ST)		+= sdhci-st.o
 obj-$(CONFIG_MMC_SDHCI_MICROCHIP_PIC32)	+= sdhci-pic32.o
 obj-$(CONFIG_MMC_SDHCI_BRCMSTB)		+= sdhci-brcmstb.o
 obj-$(CONFIG_MMC_SDHCI_OMAP)		+= sdhci-omap.o
+<<<<<<< HEAD
 obj-$(CONFIG_MMC_CQHCI)			+= cqhci-core.o
 cqhci-core-y				+= cqhci.o
 cqhci-core-$(CONFIG_MMC_CRYPTO)		+= cqhci-crypto.o
+=======
+obj-$(CONFIG_MMC_CQHCI)			+= cqhci.o
+obj-$(CONFIG_MMC_CQHCI_CRYPTO)		+= cqhci-crypto.o
+obj-$(CONFIG_MMC_CQHCI_CRYPTO_QTI)	+= cqhci-crypto-qti.o
+>>>>>>> target/16.0
 
 ifeq ($(CONFIG_CB710_DEBUG),y)
 	CFLAGS-cb710-mmc	+= -DDEBUG

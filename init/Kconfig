@@ -8,6 +8,23 @@ config DEFCONFIG_LIST
 	default ARCH_DEFCONFIG
 	default "arch/$(ARCH)/defconfig"
 
+config CC_VERSION_TEXT
+	string
+	default "$(CC_VERSION_TEXT)"
+	help
+	  This is used in unclear ways:
+
+	  - Re-run Kconfig when the compiler is updated
+	    The 'default' property references the environment variable,
+	    CC_VERSION_TEXT so it is recorded in include/config/auto.conf.cmd.
+	    When the compiler is updated, Kconfig will be invoked.
+
+	  - Ensure full rebuild when the compier is updated
+	    include/linux/kconfig.h contains this option in the comment line so
+	    fixdep adds include/config/cc/version/text.h into the auto-generated
+	    dependency. When the compiler is updated, syncconfig will touch it
+	    and then every file will be rebuilt.
+
 config CC_IS_GCC
 	def_bool $(success,$(CC) --version | head -n 1 | grep -q gcc)
 
@@ -127,6 +144,28 @@ config BUILD_SALT
           this option will use the value in the calculation of the build id.
           This is mostly useful for distributions which want to ensure the
           build is unique between builds. It's safe to leave the default.
+
+config INLINE_OPTIMIZATION
+	bool "Optimize compiler inlining"
+	default n
+	help
+	  Inlining functions in the hot-path can help improve performance,
+	  while also increasing the final size of the kernel image. Setting
+	  this option informs the compiler to optimize inlining. Whether to
+	  inline for performance or reduced size is controlled via the
+	  optimize for size (CC_OPTIMIZE_FOR_SIZE) or optimize for
+	  performance (CC_OPTIMIZE_FOR_PERFORMANCE) configs.
+
+config POLLY_CLANG
+	bool "Use Clang Polly optimizations"
+	help
+	  This option enables Clang's polyhedral loop optimizer known as
+	  Polly. Polly is able to optimize various loops throughout the
+	  kernel for cache locality. This requires a Clang toolchain
+	  compiled with support for Polly. More information can be found
+	  from Polly's website:
+
+	  https://polly.llvm.org
 
 config HAVE_KERNEL_GZIP
 	bool
@@ -338,15 +377,20 @@ config AUDIT
 	help
 	  Enable auditing infrastructure that can be used with another
 	  kernel subsystem, such as SELinux (which requires this for
-	  logging of avc messages output).  System call auditing is included
-	  on architectures which support it.
+	  logging of avc messages output). Does not do system-call
+	  auditing without CONFIG_AUDITSYSCALL.
 
 config HAVE_ARCH_AUDITSYSCALL
 	bool
 
 config AUDITSYSCALL
-	def_bool y
+	bool "Enable system-call auditing support"
 	depends on AUDIT && HAVE_ARCH_AUDITSYSCALL
+	default y if SECURITY_SELINUX
+	help
+	  Enable low-overhead system-call auditing infrastructure that
+	  can be used independently or with another kernel subsystem,
+	  such as SELinux.
 
 config AUDIT_WATCH
 	def_bool y
@@ -426,6 +470,15 @@ config IRQ_TIME_ACCOUNTING
 	  small performance impact.
 
 	  If in doubt, say N here.
+
+config SCHED_WALT
+	bool "Support window based load tracking"
+	depends on SMP
+	help
+	This feature will allow the scheduler to maintain a tunable window
+	based set of metrics for tasks and runqueues. These metrics can be
+	used to guide task placement as well as task frequency requirements
+	for cpufreq governors.
 
 config HAVE_SCHED_AVG_IRQ
 	def_bool y
@@ -541,6 +594,16 @@ config PSI_DEFAULT_DISABLED
 
 	  Say N if unsure.
 
+config PSI_FTRACE
+	bool "Insert debug hooks for PSI ftrace events"
+	default n
+	depends on PSI
+	help
+	  If not set, PSI ftrace events will be disabled and
+	  will not incur any performance penalty.
+	  If set, PSI ftrace events may be
+	  enabled.
+
 endmenu # "CPU/Task time and stats accounting"
 
 config CPU_ISOLATION
@@ -609,6 +672,16 @@ config LOG_BUF_SHIFT
 		     14 => 16 KB
 		     13 =>  8 KB
 		     12 =>  4 KB
+
+config CONSOLE_FLUSH_ON_HOTPLUG
+	bool "Enable console flush configurable in hot plug code path"
+	depends on HOTPLUG_CPU
+	def_bool n
+	help
+	In cpu hot plug path console lock acquire and release causes the
+	console to flush. If console lock is not free hot plug latency
+	increases. So make console flush configurable in hot plug path
+	and default disabled to help in cpu hot plug latencies.
 
 config LOG_CPU_MAX_BUF_SHIFT
 	int "CPU kernel log buffer size contribution (13 => 8 KB, 17 => 128KB)"
@@ -802,6 +875,7 @@ config PAGE_COUNTER
 
 config MEMCG
 	bool "Memory controller"
+	default y
 	select PAGE_COUNTER
 	select EVENTFD
 	help
@@ -810,6 +884,7 @@ config MEMCG
 config MEMCG_SWAP
 	bool "Swap controller"
 	depends on MEMCG && SWAP
+	default y
 	help
 	  Provides control over the swap space consumed by tasks in a cgroup.
 
@@ -826,6 +901,11 @@ config MEMCG_SWAP_ENABLED
 	  For those who want to have the feature enabled by default should
 	  select this option (if, for some reason, they need to disable it
 	  then swapaccount=0 does the trick).
+
+config MEMCG_FORCE_USE_VM_SWAPPINESS
+	bool "Force to use vm_swappiness instead of memcg->swappiness"
+	depends on MEMCG_SWAP
+	default y
 
 config MEMCG_KMEM
 	bool
@@ -1049,6 +1129,16 @@ config SOCK_CGROUP_DATA
 
 endif # CGROUPS
 
+config SCHED_CORE_CTL
+	bool "QTI Core Control"
+	depends on SMP && SCHED_WALT
+	help
+	  This options enables the core control functionality in
+	  the scheduler. Core control automatically offline and
+	  online cores based on cpu load and utilization.
+
+	  If unsure, say N here.
+
 menuconfig NAMESPACES
 	bool "Namespaces support" if EXPERT
 	depends on MULTIUSER
@@ -1119,6 +1209,23 @@ config CHECKPOINT_RESTORE
 	  entries.
 
 	  If unsure, say N here.
+
+config SCHED_BORE
+	bool "Burst-Oriented Response Enhancer"
+	default y
+	help
+	  In Desktop and Mobile computing, one might prefer interactive
+	  tasks to keep responsive no matter what they run in the background.
+
+	  Enabling this kernel feature modifies the scheduler to discriminate
+	  tasks by their burst time (runtime since it last went sleeping or
+	  yielding state) and prioritize those that run less bursty.
+	  Such tasks usually include window compositor, widgets backend,
+	  terminal emulator, video playback, games and so on.
+	  With a little impact to scheduling fairness, it may improve
+	  responsiveness especially under heavy background workload.
+
+	  If unsure, say Y here.
 
 config SCHED_AUTOGROUP
 	bool "Automatic process group scheduling"
@@ -1730,6 +1837,16 @@ config PERF_EVENTS
 
 	  Say Y if unsure.
 
+config PERF_USER_SHARE
+	bool "Perf event sharing with user-space"
+	help
+	  Say yes here to enable the user-space sharing of events. The events
+	  can be shared among other user-space events or with kernel created
+	  events that has the same config and type event attributes.
+
+	  Say N if unsure.
+
+
 config DEBUG_PERF_USE_VMALLOC
 	default n
 	bool "Debug: use vmalloc to back perf mmap() buffers"
@@ -2141,6 +2258,7 @@ config TRIM_UNUSED_KSYMS
 config UNUSED_KSYMS_WHITELIST
 	string "Whitelist of symbols to keep in ksymtab"
 	depends on TRIM_UNUSED_KSYMS
+	default "scripts/lto-used-symbollist.txt" if LTO_CLANG
 	help
 	  By default, all unused exported symbols will be un-exported from the
 	  build when TRIM_UNUSED_KSYMS is selected.

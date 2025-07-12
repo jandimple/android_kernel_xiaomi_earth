@@ -1395,6 +1395,10 @@ void usb_initialize_gadget(struct device *parent, struct usb_gadget *gadget,
 	INIT_WORK(&gadget->work, usb_gadget_state_work);
 	gadget->dev.parent = parent;
 
+	dma_set_coherent_mask(&gadget->dev, parent->coherent_dma_mask);
+	gadget->dev.dma_parms = parent->dma_parms;
+	gadget->dev.dma_mask = parent->dma_mask;
+
 	if (release)
 		gadget->dev.release = release;
 	else

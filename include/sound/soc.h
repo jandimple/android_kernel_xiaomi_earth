@@ -19,6 +19,7 @@
 #include <linux/kernel.h>
 #include <linux/regmap.h>
 #include <linux/log2.h>
+#include <linux/async.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/compress_driver.h>
@@ -1069,6 +1070,8 @@ struct snd_soc_card {
 	struct mutex dapm_mutex;
 	struct mutex dapm_power_mutex;
 
+	spinlock_t dpcm_lock;
+
 	bool instantiated;
 	bool topology_shortname_created;
 
@@ -1367,6 +1370,8 @@ int snd_soc_component_test_bits(struct snd_soc_component *component,
 	unsigned int reg, unsigned int mask, unsigned int value);
 struct snd_soc_component *soc_find_component(
 	const struct device_node *of_node, const char *name);
+struct snd_soc_component *soc_find_component_locked(
+	const struct device_node *of_node, const char *name);
 
 /* component wide operations */
 int snd_soc_component_set_sysclk(struct snd_soc_component *component,
@@ -1546,7 +1551,19 @@ extern struct dentry *snd_soc_debugfs_root;
 #endif
 
 extern const struct dev_pm_ops snd_soc_pm_ops;
-
+//+Bug702114, qiuyonghui.wt, 20211129 add mmitest and smartpa info
+enum{
+   INVALD = -1,
+   FS16XX,
+   AW8825,
+   TAS2558,
+   FS18XX,
+   MAX_NUM,
+};
+int snd_soc_register_info(const char * name);
+void snd_soc_unregister_info(void);
+int snd_soc_set_smartpa_type(const char * name,int pa_type);
+//-Bug702114, qiuyonghui.wt, 20211129 add mmitest and smartpa info
 /* Helper functions */
 static inline void snd_soc_dapm_mutex_lock(struct snd_soc_dapm_context *dapm)
 {

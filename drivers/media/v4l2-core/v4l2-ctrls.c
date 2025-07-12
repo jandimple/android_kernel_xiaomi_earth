@@ -201,6 +201,12 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
 	static const char * const mpeg_video_bitrate_mode[] = {
 		"Variable Bitrate",
 		"Constant Bitrate",
+<<<<<<< HEAD
+=======
+		"Maximum Bitrate",
+		"CBR VFR",
+		"MBR VFR",
+>>>>>>> target/16.0
 		"Constant Quality",
 		NULL
 	};
@@ -340,9 +346,10 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
 		"5",
 		"5.1",
 		"5.2",
-		"6.0",
+		"6",
 		"6.1",
 		"6.2",
+		"Unknown",
 		NULL,
 	};
 	static const char * const h264_loop_filter[] = {
@@ -520,6 +527,7 @@ const char * const *v4l2_ctrl_get_menu(u32 id)
 		"6",
 		"6.1",
 		"6.2",
+		"Unknown",
 		NULL,
 	};
 	static const char * const hevc_hierarchial_coding_type[] = {

@@ -358,7 +358,10 @@ static struct sk_buff *udp_gro_receive_segment(struct list_head *head,
 	struct sk_buff *pp = NULL;
 	struct udphdr *uh2;
 	struct sk_buff *p;
+<<<<<<< HEAD
 	unsigned int ulen;
+=======
+>>>>>>> target/16.0
 
 	/* requires non zero csum, for symmetry with GSO */
 	if (!uh->check) {
@@ -366,12 +369,15 @@ static struct sk_buff *udp_gro_receive_segment(struct list_head *head,
 		return NULL;
 	}
 
+<<<<<<< HEAD
 	/* Do not deal with padded or malicious packets, sorry ! */
 	ulen = ntohs(uh->len);
 	if (ulen <= sizeof(*uh) || ulen != skb_gro_len(skb)) {
 		NAPI_GRO_CB(skb)->flush = 1;
 		return NULL;
 	}
+=======
+>>>>>>> target/16.0
 	/* pull encapsulating udp header */
 	skb_gro_pull(skb, sizeof(struct udphdr));
 	skb_gro_postpull_rcsum(skb, uh, sizeof(struct udphdr));
@@ -390,6 +396,7 @@ static struct sk_buff *udp_gro_receive_segment(struct list_head *head,
 
 		/* Terminate the flow on len mismatch or if it grow "too much".
 		 * Under small packet flood GRO count could elsewhere grow a lot
+<<<<<<< HEAD
 		 * leading to excessive truesize values.
 		 * On len mismatch merge the first packet shorter than gso_size,
 		 * otherwise complete the GRO packet.
@@ -398,6 +405,15 @@ static struct sk_buff *udp_gro_receive_segment(struct list_head *head,
 		    ulen != ntohs(uh2->len) ||
 		    NAPI_GRO_CB(p)->count >= UDP_GRO_CNT_MAX)
 			pp = p;
+=======
+		 * leading to execessive truesize values
+		 */
+		if (!skb_gro_receive(p, skb) &&
+		    NAPI_GRO_CB(p)->count >= UDP_GRO_CNT_MAX)
+			pp = p;
+		else if (uh->len != uh2->len)
+			pp = p;
+>>>>>>> target/16.0
 
 		return pp;
 	}
@@ -432,11 +448,28 @@ struct sk_buff *udp_gro_receive(struct list_head *head, struct sk_buff *skb,
 		return pp;
 	}
 
+	rcu_read_lock();
+	sk = (*lookup)(skb, uh->source, uh->dest);
+	if (!sk)
+		goto out_unlock;
+
+	if (udp_sk(sk)->gro_enabled) {
+		pp = call_gro_receive(udp_gro_receive_segment, head, skb);
+		rcu_read_unlock();
+		return pp;
+	}
+
 	if (NAPI_GRO_CB(skb)->encap_mark ||
 	    (uh->check && skb->ip_summed != CHECKSUM_PARTIAL &&
 	     NAPI_GRO_CB(skb)->csum_cnt == 0 &&
+<<<<<<< HEAD
 		 !NAPI_GRO_CB(skb)->csum_valid))
  		 goto out;
+=======
+	     !NAPI_GRO_CB(skb)->csum_valid) ||
+	    !udp_sk(sk)->gro_receive)
+		goto out_unlock;
+>>>>>>> target/16.0
 
 	/* mark that this skb passed once through the tunnel gro layer */
 	NAPI_GRO_CB(skb)->encap_mark = 1;
@@ -463,7 +496,12 @@ struct sk_buff *udp_gro_receive(struct list_head *head, struct sk_buff *skb,
 	skb_gro_postpull_rcsum(skb, uh, sizeof(struct udphdr));
 	pp = call_gro_receive_sk(udp_sk(sk)->gro_receive, sk, head, skb);
 
+<<<<<<< HEAD
 out:
+=======
+out_unlock:
+	rcu_read_unlock();
+>>>>>>> target/16.0
 	skb_gro_flush_final(skb, pp, flush);
 	return pp;
 }
@@ -527,7 +565,13 @@ int udp_gro_complete(struct sk_buff *skb, int nhoff,
 
 	rcu_read_lock();
 	sk = (*lookup)(skb, uh->source, uh->dest);
+<<<<<<< HEAD
 	if (sk && udp_sk(sk)->gro_complete) {
+=======
+	if (sk && udp_sk(sk)->gro_enabled) {
+		err = udp_gro_complete_segment(skb);
+	} else if (sk && udp_sk(sk)->gro_complete) {
+>>>>>>> target/16.0
 		skb_shinfo(skb)->gso_type = uh->check ? SKB_GSO_UDP_TUNNEL_CSUM
 					: SKB_GSO_UDP_TUNNEL;
 
@@ -537,8 +581,11 @@ int udp_gro_complete(struct sk_buff *skb, int nhoff,
 		skb->encapsulation = 1;
 		err = udp_sk(sk)->gro_complete(sk, skb,
 				nhoff + sizeof(struct udphdr));
+<<<<<<< HEAD
 	} else {
 		err = udp_gro_complete_segment(skb);
+=======
+>>>>>>> target/16.0
 	}
 	rcu_read_unlock();
 

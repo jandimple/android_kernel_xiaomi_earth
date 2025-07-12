@@ -51,6 +51,9 @@ config NET_INGRESS
 config NET_EGRESS
 	bool
 
+config SKB_EXTENSIONS
+	bool
+
 menu "Networking options"
 
 source "net/packet/Kconfig"
@@ -297,8 +300,11 @@ config BPF_JIT
 
 config BPF_STREAM_PARSER
 	bool "enable BPF STREAM_PARSER"
+	depends on INET
 	depends on BPF_SYSCALL
+	depends on CGROUP_BPF
 	select STREAM_PARSER
+	select NET_SOCK_MSG
 	---help---
 	 Enabling this allows a stream parser to be used with
 	 BPF_MAP_TYPE_SOCKMAP.
@@ -318,6 +324,15 @@ config NET_FLOW_LIMIT
 	  maintain capacity for the other flows. This feature provides servers
 	  with many clients some protection against DoS by a single (spoofed)
 	  flow that greatly exceeds average workload.
+
+config SOCKEV_NLMCAST
+	bool "Enable SOCKEV Netlink Multicast"
+	default n
+	help
+	  Default client for SOCKEV notifier events. Sends multicast netlink
+	  messages whenever the socket event notifier is invoked. Enable if
+	  user space entities need to be notified of socket events without
+	  having to poll /proc
 
 menu "Network testing"
 
@@ -409,6 +424,14 @@ config GRO_CELLS
 
 config SOCK_VALIDATE_XMIT
 	bool
+
+config NET_SOCK_MSG
+	bool
+	default n
+	help
+	  The NET_SOCK_MSG provides a framework for plain sockets (e.g. TCP) or
+	  ULPs (upper layer modules, e.g. TLS) to process L7 application data
+	  with the help of BPF programs.
 
 config NET_DEVLINK
 	tristate "Network physical/parent device Netlink interface"

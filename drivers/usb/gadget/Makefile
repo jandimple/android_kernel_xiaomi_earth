@@ -12,3 +12,5 @@ libcomposite-y			+= composite.o functions.o configfs.o u_f.o
 libcomposite-$(CONFIG_USB_CONFIGFS_MTK_FASTMETA)	+= meta.o
 
 obj-$(CONFIG_USB_GADGET)	+= udc/ function/ legacy/
+
+obj-$(CONFIG_USB_ANDROID_SAMSUNG_COMPOSITE)	+= multi_config.o

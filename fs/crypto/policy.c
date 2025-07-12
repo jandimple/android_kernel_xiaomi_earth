@@ -31,6 +31,7 @@ bool fscrypt_policies_equal(const union fscrypt_policy *policy1,
 	if (policy1->version != policy2->version)
 		return false;
 
+<<<<<<< HEAD
 	policy1_t = *policy1;
 	policy2_t = *policy2;
 
@@ -47,6 +48,22 @@ bool fscrypt_policies_equal(const union fscrypt_policy *policy1,
 	}
 
 	return !memcmp(&policy1_t, &policy2_t, fscrypt_policy_size(policy1));
+=======
+	if (fscrypt_policy_contents_mode(policy1) == FSCRYPT_MODE_PRIVATE)
+		return(!memcmp(policy1->v1.master_key_descriptor,
+		       policy2->v1.master_key_descriptor,
+		       FSCRYPT_KEY_DESCRIPTOR_SIZE)) &&
+		      (fscrypt_policy_contents_mode(policy1) ==
+		       fscrypt_policy_contents_mode(policy2)) &&
+		      (fscrypt_policy_fnames_mode(policy1) ==
+		       fscrypt_policy_fnames_mode(policy2)) &&
+		      ((fscrypt_policy_flags(policy1) &
+			~FSCRYPT_POLICY_FLAG_IV_INO_LBLK_32) ==
+		       (fscrypt_policy_flags(policy2) &
+			~FSCRYPT_POLICY_FLAG_IV_INO_LBLK_32));
+	else
+		return !memcmp(policy1, policy2, fscrypt_policy_size(policy1));
+>>>>>>> target/16.0
 }
 
 static bool fscrypt_valid_enc_modes(u32 contents_mode, u32 filenames_mode)
@@ -61,6 +78,10 @@ static bool fscrypt_valid_enc_modes(u32 contents_mode, u32 filenames_mode)
 
 	if (contents_mode == FSCRYPT_MODE_ADIANTUM &&
 	    filenames_mode == FSCRYPT_MODE_ADIANTUM)
+		return true;
+
+	if (contents_mode == FSCRYPT_MODE_PRIVATE &&
+	    filenames_mode == FSCRYPT_MODE_AES_256_CTS)
 		return true;
 
 	return false;
@@ -650,6 +671,21 @@ int fscrypt_has_permitted_context(struct inode *parent, struct inode *child)
 }
 EXPORT_SYMBOL(fscrypt_has_permitted_context);
 
+#define SDHCI "sdhci"
+
+static int fscrypt_update_context(union fscrypt_context *ctx,
+						const char *file_system_type)
+{
+	char *boot = "ufs";
+
+	if (!fscrypt_find_storage_type(&boot)) {
+		if (!strcmp(boot, SDHCI) && !strcmp(file_system_type, "f2fs"))
+			ctx->v1.flags |= FSCRYPT_POLICY_FLAG_IV_INO_LBLK_32;
+		return 0;
+	}
+	return -EINVAL;
+}
+
 /**
  * fscrypt_inherit_context() - Sets a child context from its parent
  * @parent: Parent inode from which the context is inherited.
@@ -666,6 +702,7 @@ int fscrypt_inherit_context(struct inode *parent, struct inode *child,
 	int ctxsize;
 	struct fscrypt_info *ci;
 	int res;
+	const char *file_system_type;
 
 	res = fscrypt_get_encryption_info(parent);
 	if (res < 0)
@@ -675,8 +712,11 @@ int fscrypt_inherit_context(struct inode *parent, struct inode *child,
 	if (ci == NULL)
 		return -ENOKEY;
 
-	ctxsize = fscrypt_new_context_from_policy(&ctx, &ci->ci_policy);
+	file_system_type = ci->ci_inode->i_sb->s_type->name;
+	if (!file_system_type)
+		return -EINVAL;
 
+<<<<<<< HEAD
 	/* only for eMMC + F2FS security OTA */
 	if (S_ISREG(child->i_mode) &&
 		ctx.version == FSCRYPT_CONTEXT_V1 &&
@@ -684,6 +724,15 @@ int fscrypt_inherit_context(struct inode *parent, struct inode *child,
 		is_emmc_type() == 1)
 		ctx.v1.flags |= FSCRYPT_POLICY_FLAG_IV_INO_LBLK_32;
 
+=======
+	ctxsize = fscrypt_new_context_from_policy(&ctx, &ci->ci_policy);
+	if (fscrypt_policy_contents_mode(&ci->ci_policy) ==
+	    FSCRYPT_MODE_PRIVATE) {
+		res = fscrypt_update_context(&ctx, file_system_type);
+		if (res)
+			return res;
+	}
+>>>>>>> target/16.0
 	BUILD_BUG_ON(sizeof(ctx) != FSCRYPT_SET_CONTEXT_MAX_SIZE);
 	res = parent->i_sb->s_cop->set_context(child, &ctx, ctxsize, fs_data);
 	if (res)

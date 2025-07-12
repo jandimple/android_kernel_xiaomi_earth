@@ -341,7 +341,10 @@ struct vm_area_struct *vm_area_dup(struct vm_area_struct *orig)
 
 	if (new) {
 		*new = *orig;
+<<<<<<< HEAD
 		INIT_LIST_HEAD(&new->anon_vma_chain);
+=======
+>>>>>>> target/16.0
 		INIT_VMA(new);
 	}
 	return new;
@@ -568,7 +571,11 @@ static __latent_entropy int dup_mmap(struct mm_struct *mm,
 				 * it until the TLB are flushed below.
 				 */
 				last = mpnt;
+<<<<<<< HEAD
 				vm_raw_write_begin(mpnt);
+=======
+				vm_write_begin(mpnt);
+>>>>>>> target/16.0
 			}
 			retval = copy_page_range(mm, oldmm, mpnt);
 		}
@@ -596,7 +603,11 @@ out:
 			if (last->vm_flags & VM_DONTCOPY)
 				continue;
 			if (!(last->vm_flags & VM_WIPEONFORK))
+<<<<<<< HEAD
 				vm_raw_write_end(last);
+=======
+				vm_write_end(last);
+>>>>>>> target/16.0
 		}
 	}
 
@@ -644,7 +655,13 @@ static void check_mm(struct mm_struct *mm)
 	int i;
 
 	for (i = 0; i < NR_MM_COUNTERS; i++) {
-		long x = atomic_long_read(&mm->rss_stat.count[i]);
+		long x;
+
+		/* MM_UNRECLAIMABLE could be freed later in exit_files */
+		if (i == MM_UNRECLAIMABLE)
+			continue;
+
+		x = atomic_long_read(&mm->rss_stat.count[i]);
 
 		if (unlikely(x))
 			printk(KERN_ALERT "BUG: Bad rss-counter state "
@@ -899,10 +916,12 @@ static struct task_struct *dup_task_struct(struct task_struct *orig, int node)
 #endif
 
 	/*
-	 * One for us, one for whoever does the "release_task()" (usually
-	 * parent)
+	 * One for the user space visible state that goes away when reaped.
+	 * One for the scheduler.
 	 */
-	atomic_set(&tsk->usage, 2);
+	refcount_set(&tsk->rcu_users, 2);
+	/* One for the rcu users */
+	atomic_set(&tsk->usage, 1);
 #ifdef CONFIG_BLK_DEV_IO_TRACE
 	tsk->btrace_seq = 0;
 #endif
@@ -2242,7 +2261,13 @@ static __latent_entropy struct task_struct *copy_process(
 		fd_install(pidfd, pidfile);
 
 	proc_fork_connector(p);
+<<<<<<< HEAD
 	sched_post_fork(p);
+=======
+#ifdef CONFIG_SCHED_BORE
+	sched_post_fork(p);
+#endif // CONFIG_SCHED_BORE
+>>>>>>> target/16.0
 	cgroup_post_fork(p);
 	perf_event_fork(p);
 
@@ -2296,6 +2321,7 @@ bad_fork_cleanup_perf:
 	perf_event_free_task(p);
 bad_fork_cleanup_policy:
 	lockdep_free_task(p);
+	free_task_load_ptrs(p);
 #ifdef CONFIG_NUMA
 	mpol_put(p->mempolicy);
 bad_fork_cleanup_threadgroup_lock:

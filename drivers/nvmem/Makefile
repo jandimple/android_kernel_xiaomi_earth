@@ -30,6 +30,7 @@ obj-$(CONFIG_MT6359_EFUSE)	+= nvmem-mt6359-efuse.o
 nvmem-mt6359-efuse-y		:= mt6359-efuse.o
 obj-$(CONFIG_QCOM_QFPROM)	+= nvmem_qfprom.o
 nvmem_qfprom-y			:= qfprom.o
+obj-$(CONFIG_NVMEM_SPMI_SDAM)	+= qcom-spmi-sdam.o
 obj-$(CONFIG_ROCKCHIP_EFUSE)	+= nvmem_rockchip_efuse.o
 nvmem_rockchip_efuse-y		:= rockchip-efuse.o
 obj-$(CONFIG_NVMEM_SUNXI_SID)	+= nvmem_sunxi_sid.o

@@ -967,12 +967,15 @@ static ssize_t devkmsg_write(struct kiocb *iocb, struct iov_iter *from)
 	if (devkmsg_log & DEVKMSG_LOG_MASK_OFF)
 		return len;
 
+//Chk106709, zhaizhenhong.wt 20211124,add log avoid init log loss
+#ifdef WT_FINAL_RELEASE
 	/* Ratelimit when not explicitly enabled. */
 	if (!(devkmsg_log & DEVKMSG_LOG_MASK_ON)) {
 		if (!___ratelimit(&user->rs, current->comm))
 			return ret;
 	}
-
+//Chk106709, zhaizhenhong.wt 20211124,add log avoid init log loss
+#endif
 	buf = kmalloc(len+1, GFP_KERNEL);
 	if (buf == NULL)
 		return -ENOMEM;
@@ -1322,6 +1325,7 @@ void __init setup_log_buf(int early)
 	if (!new_log_buf_len)
 		return;
 
+	set_memsize_kernel_type(MEMSIZE_KERNEL_LOGBUF);
 	if (early) {
 		new_log_buf =
 			memblock_virt_alloc(new_log_buf_len, LOG_ALIGN);
@@ -1329,6 +1333,7 @@ void __init setup_log_buf(int early)
 		new_log_buf = memblock_virt_alloc_nopanic(new_log_buf_len,
 							  LOG_ALIGN);
 	}
+	set_memsize_kernel_type(MEMSIZE_KERNEL_OTHERS);
 
 	if (unlikely(!new_log_buf)) {
 		pr_err("log_buf_len: %lu bytes not available\n",
@@ -2568,6 +2573,8 @@ void resume_console(void)
 	console_unlock();
 }
 
+#ifdef CONFIG_CONSOLE_FLUSH_ON_HOTPLUG
+
 /**
  * console_cpu_notify - print deferred console messages after CPU hotplug
  * @cpu: unused
@@ -2586,6 +2593,8 @@ static int console_cpu_notify(unsigned int cpu)
 	}
 	return 0;
 }
+
+#endif
 
 /**
  * console_lock - lock the console system for exclusive use.
@@ -3298,10 +3307,14 @@ void __init console_init(void)
 static int __init printk_late_init(void)
 {
 	struct console *con;
+<<<<<<< HEAD
 #ifdef CONFIG_LOG_TOO_MUCH_WARNING
 	struct proc_dir_entry *entry;
 #endif
 	int ret;
+=======
+	int ret = 0;
+>>>>>>> target/16.0
 
 	for_each_console(con) {
 		if (!(con->flags & CON_BOOT))
@@ -3323,12 +3336,14 @@ static int __init printk_late_init(void)
 			unregister_console(con);
 		}
 	}
+#ifdef CONFIG_CONSOLE_FLUSH_ON_HOTPLUG
 	ret = cpuhp_setup_state_nocalls(CPUHP_PRINTK_DEAD, "printk:dead", NULL,
 					console_cpu_notify);
 	WARN_ON(ret < 0);
 	ret = cpuhp_setup_state_nocalls(CPUHP_AP_ONLINE_DYN, "printk:online",
 					console_cpu_notify, NULL);
 	WARN_ON(ret < 0);
+<<<<<<< HEAD
 #ifdef CONFIG_LOG_TOO_MUCH_WARNING
 	entry = proc_create("log_much", 0444, NULL, &log_much_ops);
 	if (!entry) {
@@ -3338,6 +3353,10 @@ static int __init printk_late_init(void)
 	log_much = kmalloc(log_buf_len + LOG_MUCH_PLUS_LEN, GFP_KERNEL);
 #endif
 	return 0;
+=======
+#endif
+	return ret;
+>>>>>>> target/16.0
 }
 late_initcall(printk_late_init);
 

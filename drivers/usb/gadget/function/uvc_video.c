@@ -255,6 +255,7 @@ static int uvcg_video_ep_queue(struct uvc_video *video, struct usb_request *req)
 
 	ret = usb_ep_queue(video->ep, req, GFP_ATOMIC);
 	if (ret < 0) {
+<<<<<<< HEAD
 		uvcg_err(&video->uvc->func, "Failed to queue request (%d).\n",
 			 ret);
 
@@ -264,6 +265,13 @@ static int uvcg_video_ep_queue(struct uvc_video *video, struct usb_request *req)
 			if (usb_endpoint_xfer_bulk(video->ep->desc))
 				usb_ep_set_halt(video->ep);
 		}
+=======
+		printk(KERN_INFO "Failed to queue request (%d).\n", ret);
+		/* Isochronous endpoints can't be halted. */
+		if ((ret != -ESHUTDOWN) &&
+				usb_endpoint_xfer_bulk(video->ep->desc))
+			usb_ep_set_halt(video->ep);
+>>>>>>> target/16.0
 	}
 
 	return ret;
@@ -503,7 +511,11 @@ uvc_video_alloc_requests(struct uvc_video *video)
 	unsigned int i;
 	int ret = -ENOMEM;
 
-	BUG_ON(video->req_size);
+	if (video->req_size) {
+		pr_err("%s: close the video node and reopen it\n",
+				__func__);
+		return -EBUSY;
+	}
 
 	req_size = video->ep->maxpacket
 		 * max_t(unsigned int, video->ep->maxburst, 1)

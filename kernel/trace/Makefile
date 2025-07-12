@@ -28,6 +28,8 @@ ifdef CONFIG_GCOV_PROFILE_FTRACE
 GCOV_PROFILE := y
 endif
 
+CFLAGS_bpf_trace.o := -I$(src)
+
 CFLAGS_trace_benchmark.o := -I$(src)
 CFLAGS_trace_events_filter.o := -I$(src)
 
@@ -84,8 +86,16 @@ obj-$(CONFIG_PROBE_EVENTS) += trace_probe.o
 obj-$(CONFIG_UPROBE_EVENTS) += trace_uprobe.o
 
 obj-$(CONFIG_TRACEPOINT_BENCHMARK) += trace_benchmark.o
+<<<<<<< HEAD
 obj-$(CONFIG_MMSTAT_TRACER) += trace_mmstat.o
 
+=======
+obj-$(CONFIG_QCOM_RTB) += msm_rtb.o
+obj-$(CONFIG_IPC_LOGGING) += ipc_logging.o
+ifdef CONFIG_DEBUG_FS
+obj-$(CONFIG_IPC_LOGGING) += ipc_logging_debug.o
+endif
+>>>>>>> target/16.0
 libftrace-y := ftrace.o
 
 obj-$(CONFIG_TRACING) += mtk_trace.o

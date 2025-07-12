@@ -11,6 +11,10 @@
 #include <linux/i3c/master.h>
 
 extern struct bus_type i3c_bus_type;
+<<<<<<< HEAD
+=======
+
+>>>>>>> target/16.0
 void i3c_bus_normaluse_lock(struct i3c_bus *bus);
 void i3c_bus_normaluse_unlock(struct i3c_bus *bus);
 
